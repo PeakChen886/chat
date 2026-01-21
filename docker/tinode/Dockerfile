@@ -51,10 +51,10 @@ ENV SAMPLE_DATA=$SAMPLE_DATA
 ENV DEFAULT_COUNTRY_CODE=US
 
 # The MySQL DSN connection.
-ENV MYSQL_DSN='root@tcp(mysql)/tinode?parseTime=true&collation=utf8mb4_0900_ai_ci'
+ENV MYSQL_DSN='root:123456@tcp(mysql-server:3306)/tinode?parseTime=true&collation=utf8mb4_0900_ai_ci'
 
 # The PostgreSQL DSN connection.
-ENV POSTGRES_DSN='postgresql://postgres:postgres@localhost:5432/tinode?sslmode=disable&connect_timeout=10'
+ENV POSTGRES_DSN='postgresql://postgres:123456@postgres-server:5432/tinode?sslmode=disable&connect_timeout=10'
 
 # Disable chatbot plugin by default.
 ENV PLUGIN_PYTHON_CHAT_BOT_ENABLED=false
@@ -145,28 +145,52 @@ ENV ACC_GC_ENABLED=false
 
 # Install root certificates, they are needed for email validator to work
 # with the TLS SMTP servers like Gmail or Mailjet. Also add bash and grep.
+# Add build dependencies: go, git, make, gcc, musl-dev
 RUN apk update && \
-	apk add --no-cache ca-certificates bash grep
+	apk add --no-cache ca-certificates bash grep go git make gcc musl-dev
 
 WORKDIR /opt/tinode
 
-# Copy config template to the container.
-COPY config.template .
-COPY entrypoint.sh .
+# Copy the entire project source code
+COPY . .
 
-# Get the desired Tinode build.
-ADD https://github.com/tinode/chat/releases/download/v$BINVERS/tinode-$TARGET_DB.linux-amd64.tar.gz .
+# Build the server and init-db
+RUN cd server && \
+	if [ "$TARGET_DB" = "alldbs" ]; then \
+		buildtag="mysql mongodb rethinkdb postgres"; \
+	else \
+		buildtag="$TARGET_DB"; \
+	fi && \
+	go build -ldflags "-s -w" -tags "$buildtag" -o tinode . && \
+	cp tinode /opt/tinode/ && \
+	cp tinode.conf /opt/tinode/ && \
+	cp -r templ /opt/tinode/ && \
+	cd ../tinode-db && \
+	go build -ldflags "-s -w" -tags "$buildtag" -o init-db . && \
+	cp init-db /opt/tinode/ && \
+	cp credentials.sh /opt/tinode/ && \
+	cp data.json /opt/tinode/ && \
+	cp *.jpg /opt/tinode/
 
-# Unpack the Tinode archive.
-RUN tar -xzf tinode-$TARGET_DB.linux-amd64.tar.gz \
-	&& rm tinode-$TARGET_DB.linux-amd64.tar.gz
+# Copy config template and entrypoint script
+COPY docker/tinode/config.template .
+COPY docker/tinode/entrypoint.sh .
 
-# Create directory for chatbot data.
-RUN mkdir /botdata
+# Clean up build dependencies and source code
+RUN apk del go git make gcc musl-dev && \
+	rm -rf server tinode-db keygen loadtest monitoring pbx py_grpc rest-auth tn-cli
 
-# Make scripts runnable
-RUN chmod +x entrypoint.sh
-RUN chmod +x credentials.sh
+# Create directory for chatbot data and static files.
+RUN mkdir /botdata && \
+	mkdir -p static
+
+# Make scripts runnable and fix line endings
+RUN apk add --no-cache dos2unix && \
+	dos2unix entrypoint.sh && \
+	dos2unix credentials.sh && \
+	chmod +x entrypoint.sh && \
+	chmod +x credentials.sh && \
+	apk del dos2unix
 
 # Healthcheck: check if port 6060 is open
 HEALTHCHECK --interval=1m --timeout=3s --start-period=30s \

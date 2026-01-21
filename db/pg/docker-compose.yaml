@@ -1,0 +1,45 @@
+version: '3.8' # 推荐使用较新的 Compose 文件格式版本
+
+services:
+  db: # 服务名称，你可以自定义，例如 'postgres-db'
+    image: postgres:14.20
+    # 使用官方 Postgres 14.20 镜像
+
+    container_name: postgres-server
+    # (可选) 指定容器名称，便于管理。如果不指定，Compose 会自动生成一个。
+
+    environment:
+      # 从 .env 文件中读取环境变量来配置 Postgres
+      # 这些变量是官方 Postgres 镜像识别的标准变量
+      POSTGRES_DB: tinode
+      POSTGRES_USER: postgres # 如果 .env 中没有设置，则默认为 'postgres'
+      POSTGRES_PASSWORD: 123456
+
+    volumes:
+      # 数据持久化：- 将宿主机的目录挂载到容器内，确保数据不随容器删除而丢失
+      - postgres_data:/var/lib/postgresql/data
+      
+      # (可选) 如果你想自定义 PostgreSQL 的初始化 SQL 脚本，可以挂载一个目录
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+      # 任何放在 ./init-scripts 目录下的 .sql, .sql.gz, 或 .sh 文件都会在容器首次启动时被执行。
+
+    ports:
+      # 端口映射：将容器的 5432 端口映射到宿主机的 5432 端口
+      # 格式：宿主机端口:容器端口
+      # 这样你才能在本机通过 localhost:5432 连接到数据库
+      - "5432:5432"
+
+    networks:
+      - shared-network
+
+    restart: unless-stopped
+    # 重启策略：除非用户手动停止，否则总是重启容器（例如在 Docker 守护进程重启或容器崩溃后）
+
+volumes:
+  # 声明上面 service 中使用的命名卷
+  # Docker 会自动创建和管理这个卷
+  postgres_data:
+
+networks:
+  shared-network:
+    external: true

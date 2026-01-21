@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  tinode:
+    image: tinode-server
+    build:
+      context: ../..
+      dockerfile: docker/tinode/Dockerfile
+      args:
+        TARGET_DB: mysql
+    container_name: tinode-server
+    ports:
+      - "6060:6060"
+    environment:
+      STORE_USE_ADAPTER: mysql
+      WAIT_FOR: mysql-server:3306
+      RESET_DB: "false"
+      UPGRADE_DB: "false"
+    networks:
+      - shared-network
+    restart: unless-stopped
+
+networks:
+  shared-network:
+    external: true
