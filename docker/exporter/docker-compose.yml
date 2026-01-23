@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tinode-exporter
+    ports:
+      - "6222:6222"
+    environment:
+      SERVE_FOR: "prometheus"
+      TINODE_ADDR: "http://tinode-server/stats/expvar/"
+      INSTANCE: "exporter-instance"
+      PROM_NAMESPACE: "tinode"
+      PROM_METRICS_PATH: "/metrics"
+    networks:
+      - shared-network
+    restart: unless-stopped
+
+networks:
+  shared-network:
+    external: true

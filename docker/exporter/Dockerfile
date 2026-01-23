@@ -1,4 +1,4 @@
-FROM alpine:3.14
+FROM alpine:3.22
 
 ARG VERSION=0.16.4
 ENV VERSION=$VERSION
@@ -24,13 +24,13 @@ ENV PROM_METRICS_PATH="/metrics"
 
 WORKDIR /opt/tinode
 
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash dos2unix
 
 # Fetch exporter build from Github.
 ADD https://github.com/tinode/chat/releases/download/v$VERSION/exporter.linux-amd64 ./exporter
 
 COPY entrypoint.sh .
-RUN chmod +x exporter && chmod +x entrypoint.sh
+RUN dos2unix entrypoint.sh && chmod +x exporter && chmod +x entrypoint.sh && apk del dos2unix
 
 ENTRYPOINT ./entrypoint.sh
 
