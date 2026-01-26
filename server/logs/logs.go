@@ -9,11 +9,11 @@ import (
 
 var (
 	// Info is a logger at the 'info' logging level.
-	Info *log.Logger
+	Info *LoggerBase
 	// Warn is a logger at the 'warning' logging level.
-	Warn *log.Logger
+	Warn *LoggerBase
 	// Err is a logger at the 'error' logging level.
-	Err *log.Logger
+	Err *LoggerBase
 )
 
 func parseFlags(logFlags string) int {
@@ -47,9 +47,31 @@ func parseFlags(logFlags string) int {
 }
 
 // Init initializes info, warning and error loggers given the flags and the output.
-func Init(output io.Writer, logFlags string) {
+func Init(output io.Writer, logFlags string, level int) {
 	flags := parseFlags(logFlags)
-	Info = log.New(output, "I", flags)
-	Warn = log.New(output, "W", flags)
-	Err = log.New(output, "E", flags)
+	Info = newLoggerBase(log.New(output, "I", flags), LevelInfo)
+	Warn = newLoggerBase(log.New(output, "W", flags), LevelWarn)
+	Err = newLoggerBase(log.New(output, "E", flags), LevelError)
+	currentLevel = level
+}
+
+// 日志级别定义
+const (
+	LevelDebug = iota
+	LevelInfo
+	LevelWarn
+	LevelError
+	LevelFatal
+)
+
+var currentLevel = LevelInfo // 默认日志级别
+
+// SetLevel 设置日志级别
+func SetLevel(level int) {
+	currentLevel = level
+}
+
+// 检查是否应该输出指定级别的日志
+func shouldLog(level int) bool {
+	return level >= currentLevel
 }

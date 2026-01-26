@@ -13,7 +13,7 @@
 	"server_status": "$SERVER_STATUS_PATH",
 	"use_x_forwarded_for": true,
 	"default_country_code": "$DEFAULT_COUNTRY_CODE",
-
+	"log_level":1,
 	"media": {
 		"use_handler": "$MEDIA_HANDLER",
 		"max_size": 33554432,

@@ -140,7 +140,13 @@ if [ -s /botdata/tino-password ] ; then
 	./credentials.sh /botdata/.tn-cookie < /botdata/tino-password
 fi
 
-args=("--config=${CONFIG}" "--static_data=$STATIC_DIR" "--cluster_self=$CLUSTER_SELF" "--pprof_url=$PPROF_URL")
+# Read log level from config file
+LOG_LEVEL=$(grep -o '"log_level":[0-9]*' $CONFIG | sed 's/"log_level"://')
+if [ -z "$LOG_LEVEL" ]; then
+    LOG_LEVEL=1
+fi
+
+args=("--config=${CONFIG}" "--static_data=$STATIC_DIR" "--cluster_self=$CLUSTER_SELF" "--pprof_url=$PPROF_URL" "--log_level=$LOG_LEVEL")
 
 # Run the tinode server.
 ./tinode "${args[@]}" 2>> /var/log/tinode.log

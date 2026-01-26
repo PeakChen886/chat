@@ -349,9 +349,17 @@ func main() {
 		"Override the URL path where the server's internal status is displayed. Use '-' to disable.")
 	pprofFile := flag.String("pprof", "", "File name to save profiling info to. Disabled if not set.")
 	pprofUrl := flag.String("pprof_url", "", "Debugging only! URL path for exposing profiling info. Disabled if not set.")
+	// 添加日志级别命令行参数
+	logLevel := flag.Int("log_level", 1, "Log level (0=debug, 1=info, 2=warn, 3=error)")
 	flag.Parse()
-
-	logs.Init(os.Stderr, *logFlags)
+	if *logLevel == 0 {
+		*logLevel = 1
+	}
+	logs.Init(os.Stderr, *logFlags, *logLevel)
+	//测试日志级别
+	logs.Info.Println("This is an info log")
+	logs.Warn.Println("This is a warn log")
+	logs.Err.Println("This is an error log")
 
 	curwd, err := os.Getwd()
 	if err != nil {
